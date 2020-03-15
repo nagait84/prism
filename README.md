@@ -15,7 +15,7 @@
 * command
 
     ``` shell
-    $ docker-compose exec rails db:create
+    $ docker-compose exec app rails db:create
     ```
 
 # Database initialization
@@ -23,7 +23,7 @@
 * command
 
     ``` shell
-    $ docker-compose exec rails db:migrate
+    $ docker-compose exec app rails db:migrate
     ```
 
 # How to run the test suite
@@ -31,7 +31,7 @@
 * [WIP]command
 
     ``` shell
-    $ docker-compose exec rspec spec/
+    $ docker-compose exec app rspec spec/
     ```
 
 # Services (job queues, cache servers, search engines, etc.)
