@@ -1,24 +1,58 @@
-# README
+# Ruby version
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+* `2.7.0`
 
-Things you may want to cover:
+# System dependencies
 
-* Ruby version
+* docker
 
-* System dependencies
+# Configuration
 
-* Configuration
+* See `docker-compose.yml`
 
-* Database creation
+# Database creation
 
-* Database initialization
+* command
 
-* How to run the test suite
+    ``` shell
+    $ docker-compose exec rails db:create
+    ```
 
-* Services (job queues, cache servers, search engines, etc.)
+# Database initialization
 
-* Deployment instructions
+* command
 
-* ...
+    ``` shell
+    $ docker-compose exec rails db:migrate
+    ```
+
+# How to run the test suite
+
+* [WIP]command
+
+    ``` shell
+    $ docker-compose exec rspec spec/
+    ```
+
+# Services (job queues, cache servers, search engines, etc.)
+
+* redis
+* MySQL
+
+# Deployment instructions
+
+* [WIP]command
+
+    ``` shell
+    $ export RAILS_MASTER_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    $ 
+    $ docker build \
+        --build-arg RAILS_MASTER_KEY="${RAILS_MASTER_KEY}" \
+        --no-cache \
+        --tag ${any_tag} \
+        --target prod_mode \
+        --file containers/app/Dockerfile \
+        .
+    $ 
+    $ # docker push .......
+    ```
