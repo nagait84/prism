@@ -1,0 +1,149 @@
+version: '3.7'
+
+# @see {https://docs.docker.com/compose/compose-file/}
+services:
+  # DBコンテナの設定
+  db:
+    # ビルドに使うイメージ
+    image: mysql:8.0
+    # 環境変数
+    environment:
+      MYSQL_DATABASE: app_development
+      MYSQL_ROOT_PASSWORD: Pn-R1Sh26w+M
+      TZ: "Asia/Tokyo"
+    # ログローテート設定
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # コンテナ間通信用
+    networks:
+      - app_net
+    # ホストOSに開放するポートの指定
+    ports:
+      - 127.0.0.1:3306:3306
+    # ファイルのマウント設定
+    volumes:
+      # データベースの内容をDocker領域に同期する(データ永続化のため)
+      - type: volume
+        source: mysql_data_vol
+        target: /var/lib/mysql
+    # コンテナを永続化
+    tty: true
+    # 認証を旧式(パスワード)に変更、デフォルトの文字コードとcollate設定を指定、暗号化のモード選択
+    command: >
+      mysqld
+      --block_encryption_mode aes-256-cbc
+      --character_set_server utf8mb4
+      --collation-server utf8mb4_bin
+      --default-authentication-plugin mysql_native_password
+      --explicit_defaults_for_timestamp
+      --init-connect 'SET NAMES utf8mb4'
+      --skip-character-set-client-handshake
+
+  # Redisコンテナの設定
+  redis:
+    # ビルドに使うイメージ
+    image: redis
+    # ログローテート設定
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # コンテナ間通信用
+    networks:
+      - app_net
+    # コンテナを永続化
+    tty: true
+
+  # APコンテナの設定
+  app:
+    # ビルド時の設定
+    build:
+      # プロジェクトのディレクトリでビルドする
+      context: .
+      # マルチステージビルドのターゲットを指定
+      target: dev_mode
+      # Dockerfileの場所を指定
+      dockerfile: containers/app/Dockerfile
+    # コンテナ依存関係
+    depends_on:
+      - db
+      - redis
+    # 環境変数
+    environment:
+      APP_DATABASE_PASSWORD: Pn-R1Sh26w+M
+      # RAILS_MASTER_KEY:
+      # RAILS_MAX_THREADS:
+      TZ: "Asia/Tokyo"
+    # ログローテート設定
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # コンテナ間通信用
+    networks:
+      - app_net
+    # ファイルのマウント設定
+    volumes:
+      # アプリのソースをホストOSと共有する
+      - type: bind
+        source: .
+        target: /app
+      # gemをDocker領域に同期する
+      - type: volume
+        source: bundle_vol
+        target: /usr/local/bundle
+    # コンテナを永続化
+    tty: true
+    # bundle install 、yarn install を行い、pumaサーバーを起動する
+    command: >
+      sh -c "
+      bundle install &&
+      rails yarn:install &&
+      rails webpacker:compile &&
+      pumactl start"
+
+  # WEBコンテナの設定
+  web:
+    # ビルド時の設定
+    build:
+      # プロジェクトのディレクトリでビルドする
+      context: .
+      # Dockerfileの場所を指定
+      dockerfile: containers/web/Dockerfile
+    # コンテナ依存関係
+    depends_on:
+      - app
+    # ログローテート設定
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # ホストOSに開放するポートの指定
+    ports:
+      - 127.0.0.1:80:80
+    # ファイルのマウント設定
+    volumes:
+      # 静的ファイルの共有
+      - type: bind
+        source: ./public
+        target: /rails_app/public
+      # pumaソケットファイルの共有
+      - type: bind
+        source: ./tmp
+        target: /rails_app/tmp
+
+# ネットワークの定義
+networks:
+  # コンテナ間通信用
+  app_net:
+
+# ボリュームの定義
+volumes:
+  mysql_data_vol:
+  bundle_vol:
